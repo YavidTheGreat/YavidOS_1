@@ -31,6 +31,10 @@ def clear_screen():
         subprocess.run('cls', shell=True)
 clear_screen()
 
+def refresh_terminal():
+    if keyboard.is_pressed("r"):
+        clear_screen()
+
 class PixelDisplay:
     def __init__(self, width, height):
         global canvas_external
@@ -120,7 +124,7 @@ if mode == "1":
     frameSpeed = abs(float(frameSpeed))
 
 elif mode == "2":
-    height_res = 50
+    height_res = 54
     width_res = 200
     terminal = PixelDisplay(width_res, height_res)
     frameSpeed = 20
@@ -140,8 +144,6 @@ cursor_pos_1 = [(height_res//2), (width_res//2)]    #intially cursor at centre
 def show_cursor():
     global height_res, width_res, cursor_pos_1
     cursor_font = "𝕏"   # to be changed in settings
-
-    terminal.set_pixel(cursor_pos_1[1],cursor_pos_1[0], cursor_font)
     
     if keyboard.is_pressed("up") and not (keyboard.is_pressed("down") or keyboard.is_pressed("right") or keyboard.is_pressed("left")):
         cursor_pos_1[0] = cursor_pos_1[0] - 1
@@ -170,14 +172,32 @@ def show_cursor():
     elif keyboard.is_pressed("down") and keyboard.is_pressed("left"):
         cursor_pos_1[0] = cursor_pos_1[0] + 1
         cursor_pos_1[1] = cursor_pos_1[1] - 1
-
+    
+    if not (cursor_pos_1[0] < 1 or cursor_pos_1[1] < 1 or cursor_pos_1[0] > (height_res - 1) or cursor_pos_1[1] > (width_res - 1)):
+        terminal.set_pixel(cursor_pos_1[1],cursor_pos_1[0], cursor_font)
+    else:
+        print("cursor out of bounds")
 
 
 #Application functions -------------------------------------
 #ideas - graphing calculator, paint program, hotbar application so you can remove it, file explorer, save variables from the actual screen, raycaster game
 
-def taskBar():  #run in every program, can terminate it from the taskbar - HOME - OPTIONS - FILE - (game of choice) - (LIVE OS STATISTICS) - SHUT DOWN
-    ()
+#first task on the bar
+task_home = get_coordinates_in_range(height_res - 6, 1, 5, 13)
+task_home_visible_area = copy.deepcopy(task_home)
+
+def taskBar():  #run in every program, can terminate it from the taskbar - HOME - OPTIONS - FILE - (game of choice) - TERMINAL - (LIVE OS STATISTICS) - SHUT DOWN
+    taskbar_full = get_coordinates_in_range(height_res - 7, 0, 7, width_res)
+    for x, y in taskbar_full:
+        terminal.set_pixel(x, y, "▓")
+
+    for x, y in task_home_visible_area:
+        terminal.set_pixel(x, y, "█")
+    #terminal.set_pixel(10, 52, " ")
+
+    if ([cursor_pos_1[1], cursor_pos_1[0]] in task_home) and keyboard.is_pressed("enter"):
+        print("WHAT THE SIGMA TESTING 1234")
+        return
 
 # 2D Map (0 = empty space, 1 = wall)
 MAP = [
@@ -191,22 +211,28 @@ MAP = [
     [1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1],
     [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    [1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1]
 ]
 
 # Player properties
 player_x, player_y = 1.5, 1.5  # Starting position near a wall
 player_angle = 0  # Looking straight to the right
 FOV = m.pi / 3  # Field of view (60 degrees)
-max_depth = 20  # Maximum ray distance
-SCREEN_WIDTH = 200  # Reduced for simplicity in IDLE
-SCREEN_HEIGHT = 50  # Reduced for simplicity in IDLE
-an = 0.1
-ad = 0.1
-# ASCII characters for shading
-SHADES = "█▓▒⣿░"
+max_depth = 28  # Maximum ray distance
+SCREEN_WIDTH = width_res  # Reduced for simplicity in IDLE
+SCREEN_HEIGHT = height_res  # Reduced for simplicity in IDLE
+#SCREEN_WIDTH = 200
+#SCREEN_HEIGHT = 50
+an = 0.1    #walk speed
+ad = 0.1    #turn speed
+SHADES = "█▓▒░#*/\|()1[]?-_+~<>i!lI;:,^`'." # ASCII characters for shading
 
 def walking_sim():
+    clear_screen()
     def cast_rays():
         """Cast rays and calculate screen data."""
         screen = []
@@ -321,6 +347,7 @@ def walking_sim():
             elif keyboard.is_pressed("d"):# Rotate right
                 player_angle += an
 
+            refresh_terminal()
     # Start the game loop
     game_loop()
 
@@ -374,15 +401,21 @@ def painter():
         #clear_screen()
         write_rewrite()
         terminal.clear()
-        show_cursor()
+
+        refresh_terminal()
 
         sideBar()
-        brush_tool(penColor1)
-        line_tool()
-        eraser_tool()
-        clear_canvas()
+        try:                                #once i fix cursor out of bounds this will be redundant
+            brush_tool(penColor1)
+            line_tool()
+            eraser_tool()
+            clear_canvas()
+        except:
+            print("Invalid area")
 
         drawBoundingBox()
+        taskBar()
+        show_cursor()
         terminal.render()
         print("C     - clear canvas")
         print("SPACE - draw")
@@ -446,9 +479,11 @@ def lineDrawer():
 
 
     while True: # display the stuff
+        refresh_terminal()
         write_rewrite()
         checkTarget()
         keyLogger()
+        taskBar()
         #clear_screen()
         terminal.clear()
             
@@ -527,13 +562,15 @@ def applications():
         terminal.set_pixel(y, x, application_highlighting_2)
 
 
-    #walking game
+    #walking game 3rd app
     application_highlighting_3 = "█"
     appname3 = ["W", "A", "L", "K", "I", "N", "G", "_", "S", "I", "M"]
     application_region_3 = get_coordinates_in_range(3, 14, 10, 4)
     application_visible_area_3 = copy.deepcopy(application_region_3)
     for x, y in line_joiner(8, 16, 11, 14):
         application_visible_area_3.remove([y, x])
+    #for x, y in line_joiner():
+        #application_visible_area_3.remove([y, x])
 
 
     for across3 in range(len(appname3)):
@@ -547,6 +584,12 @@ def applications():
     for x, y in application_visible_area_3:
         terminal.set_pixel(y, x, application_highlighting_3)
 
+    #pong game
+    #application_highlighting_4 = "█"
+    #PONG GAME (i know this will give an error its to remember to make it)
+
+    #3d renderer
+    #Same with this fat error but its so you remember to do it.
 
 # initial desktop visualisation
 
@@ -555,7 +598,9 @@ while True:
     write_rewrite()
     terminal.clear()
     drawBoundingBox()
+    refresh_terminal()
     
+    taskBar()
     applications()
     show_cursor()   # cursor implementation
     
@@ -565,6 +610,7 @@ while True:
     print("GENERAL CONTROLLS INCLUDE: ESC - exit program")
     print("                    ARROW KEYS - move cursor + diagonally")
     print("                         ENTER - select highlighted task")
+    print("                             R - refresh terminal ")
     if screen_clearer < 2:
         clear_screen()
         screen_clearer = screen_clearer + 1
